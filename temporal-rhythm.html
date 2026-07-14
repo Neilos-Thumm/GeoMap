@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="css/style.css">
+  <title>Temporal Rhythm — The Modern Gallery</title>
+  <style>
+    body { overflow: hidden; }
+
+    .analytics-layout {
+      display: flex;
+      height: calc(100vh - 56px);
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 280px;
+      min-width: 280px;
+      border-right: 1px solid var(--color-border);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      background: var(--color-bg);
+    }
+
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--color-border); }
+
+    .sidebar-header {
+      padding: 28px 22px 20px;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .sidebar-label {
+      font-size: 0.55rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      margin-bottom: 8px;
+    }
+
+    .sidebar-title {
+      font-family: var(--font-serif);
+      font-size: 1.7rem;
+      font-weight: 300;
+      line-height: 1.1;
+      margin-bottom: 6px;
+    }
+
+    .sidebar-desc {
+      font-size: 0.72rem;
+      color: var(--color-text-muted);
+      line-height: 1.6;
+    }
+
+    .s-section {
+      padding: 14px 22px;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .s-label {
+      font-size: 0.5rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      margin-bottom: 10px;
+    }
+
+    /* ── Type filter legend ── */
+    .type-legend {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .type-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 6px 8px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: border-color 0.15s, opacity 0.15s;
+      border-radius: 2px;
+    }
+
+    .type-legend-item:hover { border-color: var(--color-border); }
+
+    .type-legend-item.active {
+      border-color: var(--color-text);
+      background: rgba(0,0,0,0.02);
+    }
+
+    .type-legend-item.dimmed { opacity: 0.3; }
+
+    .legend-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .legend-name {
+      font-size: 0.7rem;
+      flex: 1;
+      text-transform: capitalize;
+    }
+
+    .legend-count {
+      font-family: var(--font-serif);
+      font-size: 0.9rem;
+      font-weight: 300;
+      color: var(--color-text-muted);
+    }
+
+    .legend-avg {
+      font-size: 0.55rem;
+      color: var(--color-text-muted);
+      letter-spacing: 0.06em;
+      width: 36px;
+      text-align: right;
+    }
+
+    /* ── Country rhythm ── */
+    .country-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .country-row { }
+
+    .country-row-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 4px;
+    }
+
+    .country-name {
+      font-size: 0.7rem;
+    }
+
+    .country-time {
+      font-family: var(--font-serif);
+      font-size: 0.85rem;
+      font-weight: 300;
+      color: var(--color-text-muted);
+    }
+
+    .country-bar-track {
+      height: 2px;
+      background: var(--color-border);
+      border-radius: 1px;
+      overflow: hidden;
+    }
+
+    .country-bar-fill {
+      height: 100%;
+      border-radius: 1px;
+      background: var(--color-text-muted);
+    }
+
+    /* ── Clock panel ── */
+    .clock-panel {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: 20px;
+      position: relative;
+    }
+
+    #clock-svg {
+      width:  min(100%, calc(100vh - 116px));
+      height: min(100%, calc(100vh - 116px));
+    }
+
+    /* SVG dot transitions */
+    .clock-dot {
+      transition: opacity 0.22s;
+      cursor: pointer;
+    }
+
+    .clock-dot.dimmed { opacity: 0.06; }
+
+    /* ── Tooltip ── */
+    .chart-tooltip {
+      position: fixed;
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      padding: 8px 12px;
+      font-size: 0.7rem;
+      line-height: 1.5;
+      pointer-events: none;
+      z-index: 999;
+      display: none;
+      max-width: 200px;
+    }
+
+    .chart-tooltip strong {
+      font-weight: 500;
+      display: block;
+      margin-bottom: 1px;
+    }
+
+    .chart-tooltip span {
+      color: var(--color-text-muted);
+      font-size: 0.62rem;
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav__brand">The Modern Gallery</a>
+  <div class="nav__links">
+    <a href="index.html">Home</a>
+    <a href="collections.html">Collections</a>
+    <a href="about.html">About</a>
+    <a href="route-analysis.html">Explore</a>
+    <a href="city-footprint.html">Footprint</a>
+    <a href="temporal-rhythm.html" class="active">Rhythm</a>
+  </div>
+</nav>
+
+<div class="analytics-layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <p class="sidebar-label">Data Analysis — III</p>
+      <h1 class="sidebar-title">Temporal Rhythm</h1>
+      <p class="sidebar-desc">
+        Every stop plotted on a 24-hour clock — when do landmarks, restaurants, and markets actually get visited?
+        Click a type to spotlight it.
+      </p>
+    </div>
+
+    <div class="s-section">
+      <p class="s-label">Location Type</p>
+      <div class="type-legend" id="type-legend"></div>
+    </div>
+
+    <div class="s-section">
+      <p class="s-label">Day Start by Country</p>
+      <div class="country-rows" id="country-rows"></div>
+    </div>
+  </aside>
+
+  <div class="clock-panel">
+    <svg id="clock-svg" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="chart-tooltip" id="tooltip"></div>
+  </div>
+
+</div>
+
+<script>
+const TYPE_COLORS = {
+  landmark:   '#1a1a1a',
+  hotel:      '#3d7a65',
+  restaurant: '#b83232',
+  market:     '#6d28d9',
+  museum:     '#b5185c',
+  sanctuary:  '#a07020',
+  recreation: '#1558b0',
+};
+
+const travelData = [
+  { date:"2026-01-03T13:48:00", type:"landmark",   name:"Bangsaen Aquarium",                   city:"Chon Buri",         country:"Thailand"       },
+  { date:"2026-01-03T07:22:00", type:"landmark",   name:"Bangsaen Beach",                       city:"Chon Buri",         country:"Thailand"       },
+  { date:"2026-01-02T14:43:00", type:"hotel",      name:"KyuuScape Pool Villa",                 city:"Chon Buri",         country:"Thailand"       },
+  { date:"2025-12-31T18:12:00", type:"market",     name:"Garden of Reeds",                      city:"Chiang Rai",        country:"Thailand"       },
+  { date:"2025-12-31T14:15:00", type:"landmark",   name:"Choui Fong Tea",                       city:"Chiang Rai",        country:"Thailand"       },
+  { date:"2025-12-31T10:59:00", type:"landmark",   name:"Mae Fah Luang Garden",                 city:"Chiang Rai",        country:"Thailand"       },
+  { date:"2025-12-30T14:06:00", type:"landmark",   name:"Wang Put Tan Tea Plantation",          city:"Chiang Rai",        country:"Thailand"       },
+  { date:"2025-12-29T21:00:00", type:"hotel",      name:"Baan Hom Muen Li",                     city:"Chiang Rai",        country:"Thailand"       },
+  { date:"2025-12-29T10:24:00", type:"landmark",   name:"Ang Khang Royal Agricultural Station", city:"Fang",              country:"Thailand"       },
+  { date:"2025-12-28T22:00:00", type:"hotel",      name:"Ton Fang Hotel",                       city:"Fang",              country:"Thailand"       },
+  { date:"2025-12-28T18:15:00", type:"market",     name:"Fang Kalaya Market",                   city:"Fang",              country:"Thailand"       },
+  { date:"2025-12-28T12:07:00", type:"landmark",   name:"Pang Hwa",                             city:"Chiang Mai",        country:"Thailand"       },
+  { date:"2025-12-28T11:06:00", type:"landmark",   name:"Alpaca Sheep Farm Mon Jam",            city:"Chiang Mai",        country:"Thailand"       },
+  { date:"2025-12-27T11:13:00", type:"landmark",   name:"Doi Inthanon",                         city:"Chiang Mai",        country:"Thailand"       },
+  { date:"2025-09-06T14:02:00", type:"restaurant", name:"Yum Cha Cuisine Indooroopilly",        city:"Brisbane",          country:"Australia"      },
+  { date:"2025-08-29T15:34:00", type:"landmark",   name:"Roma Street Parkland",                 city:"Brisbane",          country:"Australia"      },
+  { date:"2025-08-11T13:01:00", type:"market",     name:"Brisbane Showgrounds",                 city:"Brisbane",          country:"Australia"      },
+  { date:"2025-06-21T13:28:00", type:"restaurant", name:"Maru Grill House",                     city:"Brisbane",          country:"Australia"      },
+  { date:"2025-06-20T16:28:00", type:"landmark",   name:"Westfield Mt Gravatt",                 city:"Brisbane",          country:"Australia"      },
+  { date:"2025-05-02T16:04:00", type:"market",     name:"Mappins Nursery & Aquarium",           city:"Brisbane",          country:"Australia"      },
+  { date:"2025-02-22T21:11:00", type:"market",     name:"Eat Street Northshore",                city:"Brisbane",          country:"Australia"      },
+  { date:"2025-01-20T18:53:00", type:"landmark",   name:"Siam Center",                          city:"Bangkok",           country:"Thailand"       },
+  { date:"2025-01-20T12:08:00", type:"landmark",   name:"Wat Phra Si Rattana Satsadaram",       city:"Bangkok",           country:"Thailand"       },
+  { date:"2025-01-19T18:55:00", type:"landmark",   name:"ICONSIAM",                             city:"Bangkok",           country:"Thailand"       },
+  { date:"2025-01-19T10:42:00", type:"market",     name:"Ladmayom Floating Market",             city:"Bangkok",           country:"Thailand"       },
+  { date:"2025-01-18T21:16:00", type:"market",     name:"Jodd Fairs Night Market",              city:"Bangkok",           country:"Thailand"       },
+  { date:"2025-01-18T17:27:00", type:"landmark",   name:"King Power Mahanakhon",                city:"Bangkok",           country:"Thailand"       },
+  { date:"2025-01-12T12:13:00", type:"landmark",   name:"Peterskirche",                         city:"Vienna",            country:"Austria"        },
+  { date:"2025-01-11T11:43:00", type:"market",     name:"Naschmarkt",                           city:"Vienna",            country:"Austria"        },
+  { date:"2025-01-10T16:58:00", type:"landmark",   name:"St. Stephen's Cathedral",              city:"Vienna",            country:"Austria"        },
+  { date:"2025-01-10T10:55:00", type:"landmark",   name:"Schönbrunn Palace",                    city:"Vienna",            country:"Austria"        },
+  { date:"2025-01-09T14:32:00", type:"landmark",   name:"Jenner",                               city:"Berchtesgaden",     country:"Germany"        },
+  { date:"2025-01-09T12:38:00", type:"landmark",   name:"Pier St. Bartholomew",                 city:"Berchtesgaden",     country:"Germany"        },
+  { date:"2025-01-09T11:18:00", type:"landmark",   name:"Schifffahrt Königssee",                city:"Berchtesgaden",     country:"Germany"        },
+  { date:"2025-01-09T10:23:00", type:"landmark",   name:"Berchtesgaden Hbf",                    city:"Berchtesgaden",     country:"Germany"        },
+  { date:"2025-01-08T15:15:00", type:"landmark",   name:"St. Johann Nepomuk",                   city:"Munich",            country:"Germany"        },
+  { date:"2025-01-08T11:47:00", type:"landmark",   name:"Schlosspark Nymphenburg",              city:"Munich",            country:"Germany"        },
+  { date:"2025-01-07T11:35:00", type:"landmark",   name:"Zugspitze",                            city:"Garmisch-Partenkirchen", country:"Germany"   },
+  { date:"2025-01-06T17:06:00", type:"landmark",   name:"Marienplatz",                          city:"Munich",            country:"Germany"        },
+  { date:"2025-01-06T15:38:00", type:"restaurant", name:"Augustiner Keller",                    city:"Munich",            country:"Germany"        },
+  { date:"2025-01-05T12:50:00", type:"landmark",   name:"MyZeil",                               city:"Frankfurt",         country:"Germany"        },
+  { date:"2025-01-05T11:21:00", type:"museum",     name:"Historical Museum",                    city:"Frankfurt",         country:"Germany"        },
+  { date:"2025-01-04T11:58:00", type:"museum",     name:"Städel Museum",                        city:"Frankfurt",         country:"Germany"        },
+  { date:"2025-01-03T20:07:00", type:"hotel",      name:"Holiday Inn Gutleutviertel",           city:"Frankfurt",         country:"Germany"        },
+  { date:"2025-01-03T11:37:00", type:"landmark",   name:"Brandenburg Gate",                     city:"Berlin",            country:"Germany"        },
+  { date:"2025-01-02T10:35:00", type:"sanctuary",  name:"Tierpark Berlin",                      city:"Berlin",            country:"Germany"        },
+  { date:"2024-12-31T11:37:00", type:"landmark",   name:"Prague Castle",                        city:"Prague",            country:"Czech Republic" },
+  { date:"2024-12-31T09:43:00", type:"landmark",   name:"Karlův Most",                          city:"Prague",            country:"Czech Republic" },
+  { date:"2024-12-30T15:23:00", type:"landmark",   name:"Václavské Náměstí",                    city:"Prague",            country:"Czech Republic" },
+  { date:"2024-12-30T10:54:00", type:"museum",     name:"Franz Kafka Museum",                   city:"Prague",            country:"Czech Republic" },
+  { date:"2024-12-30T10:15:00", type:"landmark",   name:"Hlava Franze Kafky",                   city:"Prague",            country:"Czech Republic" },
+  { date:"2024-12-29T16:41:00", type:"landmark",   name:"Muzeum",                               city:"Prague",            country:"Czech Republic" },
+  { date:"2024-12-29T07:12:00", type:"hotel",      name:"Diana Club Hotel",                     city:"Budapest",          country:"Hungary"        },
+  { date:"2024-12-28T16:08:00", type:"market",     name:"Fashion Street",                       city:"Budapest",          country:"Hungary"        },
+  { date:"2024-12-28T15:06:00", type:"landmark",   name:"Heroes' Square",                       city:"Budapest",          country:"Hungary"        },
+  { date:"2024-12-28T11:45:00", type:"landmark",   name:"Margit Island",                        city:"Budapest",          country:"Hungary"        },
+  { date:"2024-12-28T09:41:00", type:"landmark",   name:"House of Parliament",                  city:"Budapest",          country:"Hungary"        },
+  { date:"2024-12-27T14:15:00", type:"landmark",   name:"Fisherman's Bastion",                  city:"Budapest",          country:"Hungary"        },
+  { date:"2024-12-27T07:21:00", type:"landmark",   name:"Wien Hauptbahnhof",                    city:"Vienna",            country:"Austria"        },
+  { date:"2024-12-12T13:51:00", type:"landmark",   name:"Brisbane Botanic Gardens Mt Coot-tha", city:"Brisbane",          country:"Australia"      },
+  { date:"2024-11-15T19:59:00", type:"restaurant", name:"Sushi Edo",                            city:"Brisbane",          country:"Australia"      },
+  { date:"2024-11-12T21:25:00", type:"restaurant", name:"The RedBrick Hotel",                   city:"Brisbane",          country:"Australia"      },
+  { date:"2024-10-13T17:55:00", type:"recreation", name:"KPOP Karaoke Southport",               city:"Gold Coast",        country:"Australia"      },
+  { date:"2024-10-13T16:50:00", type:"hotel",      name:"InterContinental Sanctuary Cove",      city:"Gold Coast",        country:"Australia"      },
+  { date:"2024-10-12T12:44:00", type:"restaurant", name:"George's Cocktail Bar Cafe",           city:"Gold Coast",        country:"Australia"      },
+  { date:"2024-07-20T11:32:00", type:"sanctuary",  name:"Currumbin Wildlife Sanctuary",         city:"Gold Coast",        country:"Australia"      },
+  { date:"2024-07-11T09:00:00", type:"landmark",   name:"Surfers Paradise",                     city:"Gold Coast",        country:"Australia"      },
+  { date:"2024-07-09T10:00:00", type:"landmark",   name:"The University of Queensland",         city:"Brisbane",          country:"Australia"      },
+  { date:"2024-04-02T12:39:00", type:"restaurant", name:"Shiva Indian Restaurant",              city:"Hua Hin",           country:"Thailand"       },
+  { date:"2024-04-01T19:00:00", type:"market",     name:"Cicada Market",                        city:"Hua Hin",           country:"Thailand"       },
+  { date:"2024-03-31T15:00:00", type:"hotel",      name:"Muban Ban Suk Samran",                 city:"Hua Hin",           country:"Thailand"       },
+  { date:"2024-03-31T14:26:00", type:"restaurant", name:"ร้านอาหารโกหมาก",                      city:"Hua Hin",           country:"Thailand"       },
+  { date:"2024-03-31T11:00:00", type:"museum",     name:"For Art's Sake",                       city:"Hua Hin",           country:"Thailand"       },
+  { date:"2024-03-03T06:00:00", type:"landmark",   name:"Khao Chon Kai Training Camp",          city:"Kanchanaburi",      country:"Thailand"       },
+  { date:"2023-04-12T16:00:00", type:"landmark",   name:"Sydney Opera House",                   city:"Sydney",            country:"Australia"      },
+  { date:"2019-04-13T14:50:00", type:"landmark",   name:"Eiger, Mönch and Jungfrau",            city:"Lauterbrunnen",     country:"Switzerland"    },
+];
+
+// ─── Helpers ─────────────────────────────────────────
+
+function parseHM(dateStr) {
+  return [parseInt(dateStr.slice(11,13)), parseInt(dateStr.slice(14,16))];
+}
+
+function minsToTime(mins) {
+  const h = Math.floor(mins / 60) % 24;
+  const m = Math.floor(mins % 60);
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+
+// ─── Compute stats ───────────────────────────────────
+
+// Type breakdown
+const typeStats = {};
+for (const s of travelData) {
+  if (!typeStats[s.type]) typeStats[s.type] = { count: 0, totalMins: 0 };
+  const [h, m] = parseHM(s.date);
+  typeStats[s.type].count++;
+  typeStats[s.type].totalMins += h * 60 + m;
+}
+const typeOrder = Object.entries(typeStats)
+  .sort((a, b) => b[1].count - a[1].count)
+  .map(([type, stats]) => ({ type, count: stats.count, avgMins: stats.totalMins / stats.count }));
+
+// Country average first-stop-of-day
+const dayFirstMins = {};
+for (const s of travelData) {
+  const key = `${s.country}|${s.date.slice(0,10)}`;
+  const mins = parseInt(s.date.slice(11,13)) * 60 + parseInt(s.date.slice(14,16));
+  if (!(key in dayFirstMins) || mins < dayFirstMins[key].mins) {
+    dayFirstMins[key] = { country: s.country, mins };
+  }
+}
+const countryTotals = {};
+for (const { country, mins } of Object.values(dayFirstMins)) {
+  if (!countryTotals[country]) countryTotals[country] = { total: 0, n: 0 };
+  countryTotals[country].total += mins;
+  countryTotals[country].n++;
+}
+const countryRhythm = Object.entries(countryTotals)
+  .map(([country, { total, n }]) => ({ country, avgMins: total / n }))
+  .sort((a, b) => a.avgMins - b.avgMins);
+
+// ─── SVG helpers ─────────────────────────────────────
+
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs = {}, text = null) {
+  const e = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (text !== null) e.textContent = text;
+  return e;
+}
+
+function timeToAngle(h, m = 0) {
+  return (h + m / 60) / 24 * Math.PI * 2 - Math.PI / 2;
+}
+
+function annularArc(cx, cy, r1, r2, aStart, aEnd) {
+  const [cos, sin] = [Math.cos, Math.sin];
+  const span = aEnd - aStart;
+  const large = span > Math.PI ? 1 : 0;
+  const x1 = cx + r2*cos(aStart), y1 = cy + r2*sin(aStart);
+  const x2 = cx + r2*cos(aEnd),   y2 = cy + r2*sin(aEnd);
+  const x3 = cx + r1*cos(aEnd),   y3 = cy + r1*sin(aEnd);
+  const x4 = cx + r1*cos(aStart), y4 = cy + r1*sin(aStart);
+  return `M${x1},${y1} A${r2},${r2} 0 ${large},1 ${x2},${y2} L${x3},${y3} A${r1},${r1} 0 ${large},0 ${x4},${y4}Z`;
+}
+
+// ─── Build clock ─────────────────────────────────────
+
+const CX = 300, CY = 300;
+const INNER = 78, OUTER = 232;
+
+const TIME_ZONES = [
+  { start: 0,  end: 5,  fill: 'rgba(10,10,50,0.07)'     },
+  { start: 5,  end: 8,  fill: 'rgba(255,180,80,0.08)'    },
+  { start: 8,  end: 17, fill: 'rgba(255,255,210,0.06)'   },
+  { start: 17, end: 20, fill: 'rgba(255,130,40,0.09)'    },
+  { start: 20, end: 24, fill: 'rgba(10,10,50,0.07)'      },
+];
+
+function buildClock() {
+  const svg = document.getElementById('clock-svg');
+
+  // 1 — Day/night zones
+  for (const z of TIME_ZONES) {
+    svg.appendChild(el('path', {
+      d: annularArc(CX, CY, INNER, OUTER, timeToAngle(z.start), timeToAngle(z.end)),
+      fill: z.fill
+    }));
+  }
+
+  // 2 — Guide rings
+  for (const r of [INNER, INNER + 38, INNER + 77, INNER + 115, OUTER]) {
+    svg.appendChild(el('circle', { cx: CX, cy: CY, r, fill: 'none', stroke: '#e0ddd8', 'stroke-width': '0.75' }));
+  }
+
+  // 3 — Hour tick marks + labels
+  for (let h = 0; h < 24; h++) {
+    const angle = timeToAngle(h);
+    const isMajor = h % 6 === 0;
+    const isMid   = h % 3 === 0;
+    const tickLen = isMajor ? 14 : isMid ? 9 : 5;
+    const tickR   = OUTER + 4;
+    const cos = Math.cos(angle), sin = Math.sin(angle);
+
+    svg.appendChild(el('line', {
+      x1: CX + tickR * cos,            y1: CY + tickR * sin,
+      x2: CX + (tickR + tickLen) * cos, y2: CY + (tickR + tickLen) * sin,
+      stroke: isMajor ? '#b0ada8' : '#d0cdc8',
+      'stroke-width': isMajor ? 1.2 : 0.8
+    }));
+
+    if (isMid) {
+      const labelR = OUTER + (isMajor ? 32 : 26);
+      const lx = CX + labelR * cos;
+      const ly = CY + labelR * sin;
+      svg.appendChild(el('text', {
+        x: lx, y: ly,
+        'text-anchor': 'middle',
+        'dominant-baseline': 'middle',
+        'font-family': 'Inter, sans-serif',
+        'font-size': isMajor ? '11' : '9',
+        fill: isMajor ? '#888' : '#aaa',
+        'letter-spacing': '0.02em'
+      }, `${String(h).padStart(2,'0')}`));
+    }
+  }
+
+  // 4 — Center label
+  svg.appendChild(el('text', {
+    x: CX, y: CY - 10,
+    'text-anchor': 'middle',
+    'dominant-baseline': 'middle',
+    'font-family': 'Cormorant Garamond, Georgia, serif',
+    'font-size': '28',
+    'font-weight': '300',
+    fill: '#1a1a1a'
+  }, travelData.length));
+
+  svg.appendChild(el('text', {
+    x: CX, y: CY + 14,
+    'text-anchor': 'middle',
+    'dominant-baseline': 'middle',
+    'font-family': 'Inter, sans-serif',
+    'font-size': '7.5',
+    'letter-spacing': '0.18em',
+    fill: '#aaa'
+  }, 'STOPS'));
+
+  // 5 — Stop dots
+  const tooltip = document.getElementById('tooltip');
+
+  travelData.forEach((stop, i) => {
+    const [h, m] = parseHM(stop.date);
+    const angle = timeToAngle(h, m);
+    // Radius determined by minute (0min → inner, 59min → outer)
+    // + tiny deterministic offset per stop index to prevent full overlap
+    const rBase = INNER + (OUTER - INNER) * (m / 60);
+    const jitter = ((i * 7 + stop.city.charCodeAt(0)) % 9) - 4;
+    const r = Math.min(OUTER - 3, Math.max(INNER + 3, rBase + jitter));
+    const x = CX + r * Math.cos(angle);
+    const y = CY + r * Math.sin(angle);
+
+    const dot = el('circle', {
+      cx: x, cy: y, r: 5.5,
+      fill: TYPE_COLORS[stop.type] || '#888',
+      opacity: 0.82,
+      'data-type': stop.type
+    });
+    dot.classList.add('clock-dot');
+
+    dot.addEventListener('mouseenter', (e) => {
+      dot.setAttribute('r', '8');
+      dot.setAttribute('opacity', '1');
+      tooltip.style.display = 'block';
+      tooltip.innerHTML = `<strong>${stop.name}</strong><span>${stop.type} · ${stop.city}<br>${minsToTime(h*60+m)}</span>`;
+      tooltip.style.left = (e.clientX + 14) + 'px';
+      tooltip.style.top  = (e.clientY - 44) + 'px';
+    });
+    dot.addEventListener('mousemove', (e) => {
+      tooltip.style.left = (e.clientX + 14) + 'px';
+      tooltip.style.top  = (e.clientY - 44) + 'px';
+    });
+    dot.addEventListener('mouseleave', () => {
+      dot.setAttribute('r', '5.5');
+      dot.setAttribute('opacity', '0.82');
+      tooltip.style.display = 'none';
+    });
+
+    svg.appendChild(dot);
+  });
+}
+
+// ─── Sidebar: type legend ────────────────────────────
+
+let activeType = null;
+
+function spotlightType(type) {
+  document.querySelectorAll('.clock-dot').forEach(dot => {
+    dot.classList.toggle('dimmed', dot.dataset.type !== type);
+  });
+  document.querySelectorAll('.type-legend-item').forEach(item => {
+    item.classList.toggle('active',  item.dataset.type === type);
+    item.classList.toggle('dimmed',  item.dataset.type !== type);
+  });
+}
+
+function clearSpotlight() {
+  document.querySelectorAll('.clock-dot').forEach(dot => dot.classList.remove('dimmed'));
+  document.querySelectorAll('.type-legend-item').forEach(item => {
+    item.classList.remove('active', 'dimmed');
+  });
+}
+
+function toggleType(type) {
+  if (activeType === type) {
+    activeType = null;
+    clearSpotlight();
+  } else {
+    activeType = type;
+    spotlightType(type);
+  }
+}
+
+function buildTypeLegend() {
+  const container = document.getElementById('type-legend');
+  container.innerHTML = typeOrder.map(({ type, count, avgMins }) => `
+    <div class="type-legend-item" data-type="${type}" onclick="toggleType('${type}')">
+      <span class="legend-dot" style="background:${TYPE_COLORS[type]}"></span>
+      <span class="legend-name">${type}</span>
+      <span class="legend-count">${count}</span>
+      <span class="legend-avg">${minsToTime(avgMins)}</span>
+    </div>
+  `).join('');
+}
+
+// ─── Sidebar: country rhythm ─────────────────────────
+
+function buildCountryRhythm() {
+  const maxMins = Math.max(...countryRhythm.map(c => c.avgMins));
+  const container = document.getElementById('country-rows');
+  container.innerHTML = countryRhythm.map(({ country, avgMins }) => {
+    const pct = (avgMins / (24 * 60)) * 100;
+    return `
+      <div class="country-row">
+        <div class="country-row-top">
+          <span class="country-name">${country}</span>
+          <span class="country-time">${minsToTime(avgMins)}</span>
+        </div>
+        <div class="country-bar-track">
+          <div class="country-bar-fill" style="width:${pct.toFixed(1)}%"></div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ─── Init ────────────────────────────────────────────
+buildClock();
+buildTypeLegend();
+buildCountryRhythm();
+</script>
+</body>
+</html>
