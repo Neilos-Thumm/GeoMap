@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <title>City Footprint — The Modern Gallery</title>
+  <style>
+    body { overflow: hidden; }
+
+    .analytics-layout {
+      display: flex;
+      height: calc(100vh - 56px);
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 300px;
+      min-width: 300px;
+      border-right: 1px solid var(--color-border);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      background: var(--color-bg);
+    }
+
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--color-border); }
+
+    .sidebar-header {
+      padding: 28px 24px 20px;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .sidebar-label {
+      font-size: 0.55rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      margin-bottom: 8px;
+    }
+
+    .sidebar-title {
+      font-family: var(--font-serif);
+      font-size: 1.7rem;
+      font-weight: 300;
+      line-height: 1.1;
+      margin-bottom: 6px;
+    }
+
+    .sidebar-desc {
+      font-size: 0.72rem;
+      color: var(--color-text-muted);
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+
+    .view-all-btn {
+      font-size: 0.55rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      border: 1px solid var(--color-border);
+      background: none;
+      padding: 5px 12px;
+      cursor: pointer;
+      font-family: var(--font-sans);
+      color: var(--color-text-muted);
+      transition: all 0.15s;
+    }
+
+    .view-all-btn:hover {
+      border-color: var(--color-text);
+      color: var(--color-text);
+    }
+
+    /* ── Summary stats ── */
+    .summary-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--color-border);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .summary-stat {
+      background: var(--color-bg);
+      padding: 13px 16px;
+    }
+
+    .summary-val {
+      font-family: var(--font-serif);
+      font-size: 1.4rem;
+      font-weight: 300;
+      line-height: 1;
+      margin-bottom: 3px;
+    }
+
+    .summary-lbl {
+      font-size: 0.48rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+    }
+
+    /* ── Rank list ── */
+    .rank-section-label {
+      font-size: 0.5rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      padding: 13px 24px 9px;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .rank-list {
+      flex: 1;
+      padding: 0 24px;
+    }
+
+    .rank-item {
+      padding: 11px 0;
+      border-bottom: 1px solid var(--color-border);
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .rank-item:last-child { border-bottom: none; }
+    .rank-item:hover { opacity: 0.7; }
+    .rank-item.active .rank-city { font-weight: 500; }
+
+    .rank-row {
+      display: flex;
+      align-items: baseline;
+      gap: 7px;
+      margin-bottom: 2px;
+    }
+
+    .rank-num {
+      font-size: 0.5rem;
+      color: var(--color-text-muted);
+      width: 14px;
+      flex-shrink: 0;
+      text-align: right;
+    }
+
+    .rank-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      position: relative;
+      top: -1px;
+    }
+
+    .rank-city {
+      font-size: 0.8rem;
+      flex: 1;
+      line-height: 1.2;
+    }
+
+    .rank-area {
+      font-family: var(--font-serif);
+      font-size: 0.88rem;
+      font-weight: 300;
+      white-space: nowrap;
+      color: var(--color-text);
+    }
+
+    .rank-meta {
+      font-size: 0.55rem;
+      color: var(--color-text-muted);
+      letter-spacing: 0.03em;
+      margin-left: 21px;
+      margin-bottom: 7px;
+    }
+
+    .rank-bar-track {
+      height: 2px;
+      background: var(--color-border);
+      margin-left: 21px;
+      border-radius: 1px;
+      overflow: hidden;
+    }
+
+    .rank-bar-fill {
+      height: 100%;
+      border-radius: 1px;
+      transition: width 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+    }
+
+    /* ── Map ── */
+    .map-panel {
+      flex: 1;
+      position: relative;
+      min-width: 0;
+    }
+
+    #footprint-map {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ── Legend ── */
+    .map-legend {
+      position: absolute;
+      bottom: 28px;
+      left: 12px;
+      z-index: 500;
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      pointer-events: none;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.56rem;
+      color: var(--color-text-muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .legend-swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav__brand">The Modern Gallery</a>
+  <div class="nav__links">
+    <a href="index.html">Home</a>
+    <a href="collections.html">Collections</a>
+    <a href="about.html">About</a>
+    <a href="route-analysis.html">Explore</a>
+    <a href="city-footprint.html" class="active">Footprint</a>
+  </div>
+</nav>
+
+<div class="analytics-layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <p class="sidebar-label">Data Analysis — II</p>
+      <h1 class="sidebar-title">City Footprint</h1>
+      <p class="sidebar-desc">
+        Convex hull of all visited locations per city — how much ground was actually covered, ranked by area.
+      </p>
+      <button class="view-all-btn" onclick="resetView()">View All Cities</button>
+    </div>
+
+    <div class="summary-stats">
+      <div class="summary-stat">
+        <div class="summary-val" id="stat-cities">—</div>
+        <div class="summary-lbl">Cities visited</div>
+      </div>
+      <div class="summary-stat">
+        <div class="summary-val" id="stat-stops">—</div>
+        <div class="summary-lbl">Total stops</div>
+      </div>
+      <div class="summary-stat">
+        <div class="summary-val" id="stat-largest-val">—</div>
+        <div class="summary-lbl">Largest km²</div>
+      </div>
+      <div class="summary-stat">
+        <div class="summary-val" id="stat-compact-val">—</div>
+        <div class="summary-lbl">Most compact</div>
+      </div>
+    </div>
+
+    <div class="rank-section-label">Ranked by footprint area</div>
+    <div class="rank-list" id="rank-list"></div>
+  </aside>
+
+  <div class="map-panel">
+    <div id="footprint-map"></div>
+    <div class="map-legend" id="map-legend"></div>
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+
+const COUNTRY_COLORS = {
+  'Australia':      '#3d7a58',
+  'Austria':        '#4f6fa0',
+  'Czech Republic': '#6840a0',
+  'Germany':        '#2e5fa0',
+  'Hungary':        '#a83535',
+  'Switzerland':    '#6a7a6a',
+  'Thailand':       '#c07830',
+};
+
+const travelData = [
+  { date:"2026-01-03T13:48:00", type:"landmark",   name:"Bangsaen Aquarium",                   city:"Chon Buri",         country:"Thailand",       lat:13.285362004793065,  lng:100.92534742339701 },
+  { date:"2026-01-03T07:22:00", type:"landmark",   name:"Bangsaen Beach",                       city:"Chon Buri",         country:"Thailand",       lat:13.289705508623022,  lng:100.91387518629492 },
+  { date:"2026-01-02T14:43:00", type:"hotel",      name:"KyuuScape Pool Villa",                 city:"Chon Buri",         country:"Thailand",       lat:13.299074519603161,  lng:100.92104060751180 },
+  { date:"2025-12-31T18:12:00", type:"market",     name:"Garden of Reeds",                      city:"Chiang Rai",        country:"Thailand",       lat:19.92541562226577,   lng:99.86444608130503  },
+  { date:"2025-12-31T14:15:00", type:"landmark",   name:"Choui Fong Tea",                       city:"Chiang Rai",        country:"Thailand",       lat:20.199746682660773,  lng:99.81709024298240  },
+  { date:"2025-12-31T10:59:00", type:"landmark",   name:"Mae Fah Luang Garden",                 city:"Chiang Rai",        country:"Thailand",       lat:20.29991986696831,   lng:99.85705810628276  },
+  { date:"2025-12-30T14:06:00", type:"landmark",   name:"Wang Put Tan Tea Plantation",          city:"Chiang Rai",        country:"Thailand",       lat:20.174982081978882,  lng:99.64098036387551  },
+  { date:"2025-12-29T21:00:00", type:"hotel",      name:"Baan Hom Muen Li",                     city:"Chiang Rai",        country:"Thailand",       lat:20.165229818658016,  lng:99.63222251784686  },
+  { date:"2025-12-29T10:24:00", type:"landmark",   name:"Ang Khang Royal Agricultural Station", city:"Fang",              country:"Thailand",       lat:19.90203425319804,   lng:99.04054973688986  },
+  { date:"2025-12-28T22:00:00", type:"hotel",      name:"Ton Fang Hotel",                       city:"Fang",              country:"Thailand",       lat:19.874672192136924,  lng:99.18911502524708  },
+  { date:"2025-12-28T18:15:00", type:"market",     name:"Fang Kalaya Market",                   city:"Fang",              country:"Thailand",       lat:19.915511608992706,  lng:99.20986973381906  },
+  { date:"2025-12-28T12:07:00", type:"landmark",   name:"Pang Hwa",                             city:"Chiang Mai",        country:"Thailand",       lat:18.952231834786687,  lng:98.80311496202543  },
+  { date:"2025-12-28T11:06:00", type:"landmark",   name:"Alpaca Sheep Farm Mon Jam",            city:"Chiang Mai",        country:"Thailand",       lat:18.954900520713460,  lng:98.79509821044654  },
+  { date:"2025-12-27T11:13:00", type:"landmark",   name:"Doi Inthanon",                         city:"Chiang Mai",        country:"Thailand",       lat:18.592179298743616,  lng:98.49567349870637  },
+  { date:"2025-09-06T14:02:00", type:"restaurant", name:"Yum Cha Cuisine Indooroopilly",        city:"Brisbane",          country:"Australia",      lat:-27.501126279042830, lng:152.97328378531097 },
+  { date:"2025-08-29T15:34:00", type:"landmark",   name:"Roma Street Parkland",                 city:"Brisbane",          country:"Australia",      lat:-27.462906559899540, lng:153.01851549618831 },
+  { date:"2025-08-11T13:01:00", type:"market",     name:"Brisbane Showgrounds",                 city:"Brisbane",          country:"Australia",      lat:-27.450138184353480, lng:153.03343265223276 },
+  { date:"2025-06-21T13:28:00", type:"restaurant", name:"Maru Grill House",                     city:"Brisbane",          country:"Australia",      lat:-27.472130236575072, lng:153.02780079086114 },
+  { date:"2025-06-20T16:28:00", type:"landmark",   name:"Westfield Mt Gravatt",                 city:"Brisbane",          country:"Australia",      lat:-27.562399498373505, lng:153.08312125778298 },
+  { date:"2025-05-02T16:04:00", type:"market",     name:"Mappins Nursery & Aquarium",           city:"Brisbane",          country:"Australia",      lat:-27.477455888584508, lng:153.00796787551826 },
+  { date:"2025-02-22T21:11:00", type:"market",     name:"Eat Street Northshore",                city:"Brisbane",          country:"Australia",      lat:-27.443681867391240, lng:153.08040990990418 },
+  { date:"2025-01-20T18:53:00", type:"landmark",   name:"Siam Center",                          city:"Bangkok",           country:"Thailand",       lat:13.746451255267663,  lng:100.53331626572559 },
+  { date:"2025-01-20T12:08:00", type:"landmark",   name:"Wat Phra Si Rattana Satsadaram",       city:"Bangkok",           country:"Thailand",       lat:13.751918762391220,  lng:100.49322108503979 },
+  { date:"2025-01-19T18:55:00", type:"landmark",   name:"ICONSIAM",                             city:"Bangkok",           country:"Thailand",       lat:13.726569990515010,  lng:100.51051026387552 },
+  { date:"2025-01-19T10:42:00", type:"market",     name:"Ladmayom Floating Market",             city:"Bangkok",           country:"Thailand",       lat:13.761681131274790,  lng:100.41659852709716 },
+  { date:"2025-01-18T21:16:00", type:"market",     name:"Jodd Fairs Night Market",              city:"Bangkok",           country:"Thailand",       lat:13.768216986100231,  lng:100.57192209641138 },
+  { date:"2025-01-18T17:27:00", type:"landmark",   name:"King Power Mahanakhon",                city:"Bangkok",           country:"Thailand",       lat:13.724388306558332,  lng:100.52911335593290 },
+  { date:"2025-01-12T12:13:00", type:"landmark",   name:"Peterskirche",                         city:"Vienna",            country:"Austria",        lat:48.209523522228250,  lng:16.370592694561307 },
+  { date:"2025-01-11T11:43:00", type:"market",     name:"Naschmarkt",                           city:"Vienna",            country:"Austria",        lat:48.198721493895924,  lng:16.363976629489585 },
+  { date:"2025-01-10T16:58:00", type:"landmark",   name:"St. Stephen's Cathedral",              city:"Vienna",            country:"Austria",        lat:48.208543673778620,  lng:16.373615539282277 },
+  { date:"2025-01-10T10:55:00", type:"landmark",   name:"Schönbrunn Palace",                    city:"Vienna",            country:"Austria",        lat:48.185894660557906,  lng:16.313391636889860 },
+  { date:"2025-01-09T14:32:00", type:"landmark",   name:"Jenner",                               city:"Berchtesgaden",     country:"Germany",        lat:47.575497347977745,  lng:13.020408141786206 },
+  { date:"2025-01-09T12:38:00", type:"landmark",   name:"Pier St. Bartholomew",                 city:"Berchtesgaden",     country:"Germany",        lat:47.544108480959544,  lng:12.972869892711243 },
+  { date:"2025-01-09T11:18:00", type:"landmark",   name:"Schifffahrt Königssee",                city:"Berchtesgaden",     country:"Germany",        lat:47.588436123421694,  lng:12.990662178287987 },
+  { date:"2025-01-09T10:23:00", type:"landmark",   name:"Berchtesgaden Hbf",                    city:"Berchtesgaden",     country:"Germany",        lat:47.626354724888740,  lng:12.999652502503931 },
+  { date:"2025-01-08T15:15:00", type:"landmark",   name:"St. Johann Nepomuk",                   city:"Munich",            country:"Germany",        lat:48.135261542609776,  lng:11.569938385310964 },
+  { date:"2025-01-08T11:47:00", type:"landmark",   name:"Schlosspark Nymphenburg",              city:"Munich",            country:"Germany",        lat:48.155883324759834,  lng:11.494311891213357 },
+  { date:"2025-01-07T11:35:00", type:"landmark",   name:"Zugspitze",                            city:"Garmisch-Partenkirchen", country:"Germany",   lat:47.421922027107760,  lng:10.985815811100412 },
+  { date:"2025-01-06T17:06:00", type:"landmark",   name:"Marienplatz",                          city:"Munich",            country:"Germany",        lat:48.137130558596400,  lng:11.576365935039794 },
+  { date:"2025-01-06T15:38:00", type:"restaurant", name:"Augustiner Keller",                    city:"Munich",            country:"Germany",        lat:48.143470423720300,  lng:11.552574550382689 },
+  { date:"2025-01-05T12:50:00", type:"landmark",   name:"MyZeil",                               city:"Frankfurt",         country:"Germany",        lat:50.114840238192930,  lng:8.682127023375905  },
+  { date:"2025-01-05T11:21:00", type:"museum",     name:"Historical Museum",                    city:"Frankfurt",         country:"Germany",        lat:50.109542888679100,  lng:8.683247054056338  },
+  { date:"2025-01-04T11:58:00", type:"museum",     name:"Städel Museum",                        city:"Frankfurt",         country:"Germany",        lat:50.103521603155750,  lng:8.674221925739140  },
+  { date:"2025-01-03T20:07:00", type:"hotel",      name:"Holiday Inn Gutleutviertel",           city:"Frankfurt",         country:"Germany",        lat:50.097925742470260,  lng:8.647344974305636  },
+  { date:"2025-01-03T11:37:00", type:"landmark",   name:"Brandenburg Gate",                     city:"Berlin",            country:"Germany",        lat:52.516414970770080,  lng:13.378406838739927 },
+  { date:"2025-01-02T10:35:00", type:"sanctuary",  name:"Tierpark Berlin",                      city:"Berlin",            country:"Germany",        lat:52.502920744221235,  lng:13.532012034522573 },
+  { date:"2024-12-31T11:37:00", type:"landmark",   name:"Prague Castle",                        city:"Prague",            country:"Czech Republic", lat:50.091203290825575,  lng:14.402051017846828 },
+  { date:"2024-12-31T09:43:00", type:"landmark",   name:"Karlův Most",                          city:"Prague",            country:"Czech Republic", lat:50.086783762248030,  lng:14.410896496376584 },
+  { date:"2024-12-30T15:23:00", type:"landmark",   name:"Václavské Náměstí",                    city:"Prague",            country:"Czech Republic", lat:50.081962517433640,  lng:14.427535655116698 },
+  { date:"2024-12-30T10:54:00", type:"museum",     name:"Franz Kafka Museum",                   city:"Prague",            country:"Czech Republic", lat:50.088491691831045,  lng:14.410727921518871 },
+  { date:"2024-12-30T10:15:00", type:"landmark",   name:"Hlava Franze Kafky",                   city:"Prague",            country:"Czech Republic", lat:50.081809746534546,  lng:14.421094585297821 },
+  { date:"2024-12-29T16:41:00", type:"landmark",   name:"Muzeum",                               city:"Prague",            country:"Czech Republic", lat:50.079030226754740,  lng:14.431124456449398 },
+  { date:"2024-12-29T07:12:00", type:"hotel",      name:"Diana Club Hotel",                     city:"Budapest",          country:"Hungary",        lat:47.489103246035150,  lng:19.093810908024494 },
+  { date:"2024-12-28T16:08:00", type:"market",     name:"Fashion Street",                       city:"Budapest",          country:"Hungary",        lat:47.496826127596900,  lng:19.052723272120310 },
+  { date:"2024-12-28T15:06:00", type:"landmark",   name:"Heroes' Square",                       city:"Budapest",          country:"Hungary",        lat:47.515021425886520,  lng:19.077703064338040 },
+  { date:"2024-12-28T11:45:00", type:"landmark",   name:"Margit Island",                        city:"Budapest",          country:"Hungary",        lat:47.527584658417150,  lng:19.046917029102640 },
+  { date:"2024-12-28T09:41:00", type:"landmark",   name:"House of Parliament",                  city:"Budapest",          country:"Hungary",        lat:47.507222462287800,  lng:19.046167890837200 },
+  { date:"2024-12-27T14:15:00", type:"landmark",   name:"Fisherman's Bastion",                  city:"Budapest",          country:"Hungary",        lat:47.502342155649950,  lng:19.035215717825945 },
+  { date:"2024-12-27T07:21:00", type:"landmark",   name:"Wien Hauptbahnhof",                    city:"Vienna",            country:"Austria",        lat:48.185803806386460,  lng:16.377807768197034 },
+  { date:"2024-12-12T13:51:00", type:"landmark",   name:"Brisbane Botanic Gardens Mt Coot-tha", city:"Brisbane",          country:"Australia",      lat:-27.476856128177097, lng:152.97621514694043 },
+  { date:"2024-11-15T19:59:00", type:"restaurant", name:"Sushi Edo",                            city:"Brisbane",          country:"Australia",      lat:-27.470097959340375, lng:153.02661808462380 },
+  { date:"2024-11-12T21:25:00", type:"restaurant", name:"The RedBrick Hotel",                   city:"Brisbane",          country:"Australia",      lat:-27.489433592640610, lng:153.02733988529780 },
+  { date:"2024-10-13T17:55:00", type:"recreation", name:"KPOP Karaoke Southport",               city:"Gold Coast",        country:"Australia",      lat:-27.968619509285812, lng:153.41379433685972 },
+  { date:"2024-10-13T16:50:00", type:"hotel",      name:"InterContinental Sanctuary Cove",      city:"Gold Coast",        country:"Australia",      lat:-27.851978368290478, lng:153.36045235035405 },
+  { date:"2024-10-12T12:44:00", type:"restaurant", name:"George's Cocktail Bar Cafe",           city:"Gold Coast",        country:"Australia",      lat:-27.852870043736110, lng:153.36321041463975 },
+  { date:"2024-07-20T11:32:00", type:"sanctuary",  name:"Currumbin Wildlife Sanctuary",         city:"Gold Coast",        country:"Australia",      lat:-28.135319285427016, lng:153.48914047172740 },
+  { date:"2024-07-11T09:00:00", type:"landmark",   name:"Surfers Paradise",                     city:"Gold Coast",        country:"Australia",      lat:-27.998198755481490, lng:153.42449330569810 },
+  { date:"2024-07-09T10:00:00", type:"landmark",   name:"The University of Queensland",         city:"Brisbane",          country:"Australia",      lat:-27.496715824787910, lng:153.01287221630420 },
+  { date:"2024-04-02T12:39:00", type:"restaurant", name:"Shiva Indian Restaurant",              city:"Hua Hin",           country:"Thailand",       lat:12.559764921033220,  lng:99.94124943999445  },
+  { date:"2024-04-01T19:00:00", type:"market",     name:"Cicada Market",                        city:"Hua Hin",           country:"Thailand",       lat:12.534701292448490,  lng:99.96640404666117  },
+  { date:"2024-03-31T15:00:00", type:"hotel",      name:"Muban Ban Suk Samran",                 city:"Hua Hin",           country:"Thailand",       lat:12.563044900537514,  lng:99.96151961111585  },
+  { date:"2024-03-31T14:26:00", type:"restaurant", name:"ร้านอาหารโกหมาก",                      city:"Hua Hin",           country:"Thailand",       lat:12.598753212621173,  lng:99.94939937160305  },
+  { date:"2024-03-31T11:00:00", type:"museum",     name:"For Art's Sake",                       city:"Hua Hin",           country:"Thailand",       lat:12.607076773020262,  lng:99.94898851988168  },
+  { date:"2024-03-03T06:00:00", type:"landmark",   name:"Khao Chon Kai Training Camp",          city:"Kanchanaburi",      country:"Thailand",       lat:14.134733501594209,  lng:99.39098142179421  },
+  { date:"2023-04-12T16:00:00", type:"landmark",   name:"Sydney Opera House",                   city:"Sydney",            country:"Australia",      lat:-33.856668575427555, lng:151.21575267549636 },
+  { date:"2019-04-13T14:50:00", type:"landmark",   name:"Eiger, Mönch and Jungfrau",            city:"Lauterbrunnen",     country:"Switzerland",    lat:46.574838350448530,  lng:7.975742041690927  }
+];
+
+// ─── Algorithms ──────────────────────────────────────
+
+function convexHull(pts) {
+  if (pts.length <= 2) return pts.slice();
+  const points = pts.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (O, A, B) => (A[0]-O[0])*(B[1]-O[1]) - (A[1]-O[1])*(B[0]-O[0]);
+  const lower = [];
+  for (const p of points) {
+    while (lower.length >= 2 && cross(lower.at(-2), lower.at(-1), p) <= 0) lower.pop();
+    lower.push(p);
+  }
+  const upper = [];
+  for (let i = points.length - 1; i >= 0; i--) {
+    while (upper.length >= 2 && cross(upper.at(-2), upper.at(-1), points[i]) <= 0) upper.pop();
+    upper.push(points[i]);
+  }
+  lower.pop(); upper.pop();
+  return lower.concat(upper);
+}
+
+function polygonAreaKm2(hull) {
+  if (hull.length < 3) return 0;
+  const avgLat = hull.reduce((s, p) => s + p[1], 0) / hull.length;
+  const latKm  = 111.32;
+  const lngKm  = 111.32 * Math.cos(avgLat * Math.PI / 180);
+  let area = 0;
+  for (let i = 0; i < hull.length; i++) {
+    const j = (i + 1) % hull.length;
+    area += (hull[i][0] * lngKm) * (hull[j][1] * latKm);
+    area -= (hull[j][0] * lngKm) * (hull[i][1] * latKm);
+  }
+  return Math.abs(area) / 2;
+}
+
+function maxSpanKm(points) {
+  if (points.length < 2) return 0;
+  const lats   = points.map(p => p[1]);
+  const lngs   = points.map(p => p[0]);
+  const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
+  const dLat   = (Math.max(...lats) - Math.min(...lats)) * 111.32;
+  const dLng   = (Math.max(...lngs) - Math.min(...lngs)) * 111.32 * Math.cos(avgLat * Math.PI / 180);
+  return Math.sqrt(dLat * dLat + dLng * dLng);
+}
+
+// ─── Compute per-city data ───────────────────────────
+
+function computeCities(data) {
+  const grouped = {};
+  for (const item of data) {
+    if (!grouped[item.city]) grouped[item.city] = { country: item.country, stops: [] };
+    grouped[item.city].stops.push(item);
+  }
+  return Object.entries(grouped).map(([city, { country, stops }]) => {
+    const points = stops.map(s => [s.lng, s.lat]);
+    const hull   = convexHull(points);
+    const area   = polygonAreaKm2(hull);
+    const span   = maxSpanKm(points);
+    const avgLat = points.reduce((s, p) => s + p[1], 0) / points.length;
+    const avgLng = points.reduce((s, p) => s + p[0], 0) / points.length;
+    return { city, country, stops, points, hull, area, span, center: [avgLat, avgLng] };
+  }).sort((a, b) => b.area - a.area || b.span - a.span || b.stops.length - a.stops.length);
+}
+
+const cities = computeCities(travelData);
+
+// ─── Map setup ───────────────────────────────────────
+
+const map = L.map('footprint-map', { zoomControl: false });
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; OpenStreetMap &copy; CARTO',
+  maxZoom: 18
+}).addTo(map);
+
+const layers = {};
+let globalBounds = null;
+let selectedCity = null;
+
+const defaultStyle = color => ({
+  color, fillColor: color, fillOpacity: 0.09, weight: 1.5, opacity: 0.65
+});
+const activeStyle = () => ({
+  fillOpacity: 0.22, weight: 2.5, opacity: 1
+});
+
+// ─── Render map ──────────────────────────────────────
+
+function renderMap() {
+  const allPts = [];
+
+  for (const c of cities) {
+    const color = COUNTRY_COLORS[c.country] || '#888';
+    let layer;
+
+    const tooltip =
+      `<strong style="font-family:serif;font-weight:400;font-size:13px">${c.city}</strong><br>` +
+      `<span style="font-size:11px;color:#999">${c.country} &nbsp;·&nbsp; ${c.stops.length} stop${c.stops.length > 1 ? 's' : ''}` +
+      (c.area > 0.05 ? `<br>${c.area.toFixed(2)} km² footprint` : c.span > 0.1 ? `<br>${c.span.toFixed(1)} km span` : '') +
+      `</span>`;
+
+    if (c.hull.length >= 3 && c.area > 0.01) {
+      const latlngs = c.hull.map(p => [p[1], p[0]]);
+      layer = L.polygon(latlngs, defaultStyle(color));
+    } else if (c.points.length >= 2) {
+      const latlngs = c.points.map(p => [p[1], p[0]]);
+      layer = L.polyline(latlngs, { color, weight: 2.5, opacity: 0.7, dashArray: '5 4' });
+    } else {
+      layer = L.circleMarker([c.center[0], c.center[1]], {
+        radius: 6, color, fillColor: color, fillOpacity: 0.45, weight: 2
+      });
+    }
+
+    layer.bindTooltip(tooltip, { sticky: true, offset: [10, 0] });
+    layer.on('click', () => selectCity(c.city));
+    layer.on('mouseover', () => { if (selectedCity !== c.city) layer.setStyle(activeStyle()); });
+    layer.on('mouseout',  () => { if (selectedCity !== c.city) layer.setStyle(defaultStyle(color)); });
+
+    layer.addTo(map);
+    layers[c.city] = { layer, color };
+
+    for (const p of c.points) allPts.push([p[1], p[0]]);
+  }
+
+  if (allPts.length) {
+    globalBounds = L.latLngBounds(allPts);
+    map.fitBounds(globalBounds.pad(0.08));
+  }
+}
+
+// ─── Render sidebar ──────────────────────────────────
+
+function renderSidebar() {
+  const withArea    = cities.filter(c => c.area > 0.05);
+  const largest     = withArea[0];
+  const mostCompact = withArea.at(-1);
+
+  document.getElementById('stat-cities').textContent      = cities.length;
+  document.getElementById('stat-stops').textContent       = cities.reduce((s, c) => s + c.stops.length, 0);
+  document.getElementById('stat-largest-val').textContent = largest ? largest.area.toFixed(0) : '—';
+  document.getElementById('stat-compact-val').textContent = mostCompact ? mostCompact.city : '—';
+
+  const maxArea = cities[0]?.area || 1;
+  const maxSpan = Math.max(...cities.map(c => c.span));
+
+  document.getElementById('rank-list').innerHTML = cities.map((c, i) => {
+    const color = COUNTRY_COLORS[c.country] || '#888';
+
+    let areaStr, barPct;
+    if (c.area > 0.05) {
+      areaStr = `${c.area.toFixed(1)} km²`;
+      barPct  = (c.area / maxArea) * 100;
+    } else if (c.span > 0.1) {
+      areaStr = `${c.span.toFixed(1)} km span`;
+      barPct  = (c.span / maxSpan) * 12;
+    } else {
+      areaStr = 'single location';
+      barPct  = 1;
+    }
+
+    return `
+      <div class="rank-item" data-city="${c.city}" onclick="selectCity('${c.city.replace(/'/g, "\\'")}')">
+        <div class="rank-row">
+          <span class="rank-num">${i + 1}</span>
+          <span class="rank-dot" style="background:${color}"></span>
+          <span class="rank-city">${c.city}</span>
+          <span class="rank-area">${areaStr}</span>
+        </div>
+        <div class="rank-meta">${c.country} &nbsp;·&nbsp; ${c.stops.length} stop${c.stops.length > 1 ? 's' : ''}</div>
+        <div class="rank-bar-track">
+          <div class="rank-bar-fill" style="width:${barPct.toFixed(1)}%;background:${color}"></div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ─── Render legend ───────────────────────────────────
+
+function renderLegend() {
+  const countries = [...new Set(cities.map(c => c.country))].sort();
+  document.getElementById('map-legend').innerHTML = countries.map(co => `
+    <div class="legend-item">
+      <div class="legend-swatch" style="background:${COUNTRY_COLORS[co] || '#888'}"></div>
+      ${co}
+    </div>
+  `).join('');
+}
+
+// ─── Interaction ─────────────────────────────────────
+
+function selectCity(cityName) {
+  if (selectedCity) {
+    const prev = cities.find(c => c.city === selectedCity);
+    if (prev) layers[selectedCity]?.layer.setStyle(defaultStyle(layers[selectedCity].color));
+    document.querySelector(`.rank-item[data-city="${selectedCity}"]`)?.classList.remove('active');
+  }
+
+  selectedCity = cityName;
+  const c = cities.find(c => c.city === cityName);
+  if (!c) return;
+
+  layers[cityName].layer.setStyle(activeStyle());
+  layers[cityName].layer.bringToFront();
+
+  const pts    = c.points.map(p => [p[1], p[0]]);
+  const bounds = L.latLngBounds(pts);
+  map.flyToBounds(bounds.pad(c.stops.length === 1 ? 3 : 0.5), { maxZoom: 14, duration: 0.9 });
+
+  const el = document.querySelector(`.rank-item[data-city="${cityName}"]`);
+  el?.classList.add('active');
+  el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function resetView() {
+  if (selectedCity) {
+    layers[selectedCity]?.layer.setStyle(defaultStyle(layers[selectedCity].color));
+    document.querySelector(`.rank-item[data-city="${selectedCity}"]`)?.classList.remove('active');
+    selectedCity = null;
+  }
+  if (globalBounds) map.flyToBounds(globalBounds.pad(0.08), { duration: 1 });
+}
+
+// ─── Init ────────────────────────────────────────────
+renderMap();
+renderSidebar();
+renderLegend();
+
+</script>
+</body>
+</html>
