@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/style.css">
+    <title>Collections — The Modern Gallery</title>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav__brand">The Modern Gallery</a>
+  <div class="nav__links">
+    <a href="index.html">Home</a>
+    <a href="collections.html" class="active">Collections</a>
+    <a href="about.html">About</a>
+  </div>
+</nav>
+
+<main>
+  <header class="collections_header">
+    <div>
+      <p class="collections_label">2020–2026</p>
+      <h2 class="collections_heading">The World<br>Through<br>My Lens</h2>
+    </div>
+    <p class="collections_intro">
+      Each collection represents a chapter of travel — the quiet moments, the overlooked textures,
+      the light that only lasts a second.
+    </p>
+  </header>
+
+  <div class="collections__tabs">
+    <button class="collections__tab active" onclick="filterCards('All Regions')">All Regions</button>
+    <button class="collections__tab" onclick="filterCards('Thailand')">Thailand</button>
+    <button class="collections__tab" onclick="filterCards('Australia')">Australia</button>
+    <button class="collections__tab" onclick="filterCards('Europe')">Europe</button>
+  </div>
+
+  <div class="collections__list">
+
+    <a href="album.html" class="album-card" data-region="Thailand">
+      <img class="album-card__image" src="https://drive.google.com/thumbnail?id=1d344WyTmApqc-b0n4xk6QK_Kk1XJYdnb&sz=w1000" alt="Bangkok" />
+      <div class="album-card__info">
+        <p class="album-card__count">12 Photographs</p>
+        <h3 class="album-card__name">Bangkok</h3>
+        <p class="album-card__desc">
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+        </p>
+      </div>
+    </a>
+
+    <a href="album.html" class="album-card" data-region="Australia">
+      <img class="album-card__image" src="https://drive.google.com/thumbnail?id=1px7qSse9BY3KYb_g-fKx8JholrnfiSuz&sz=w1000" alt="Australia" />
+      <div class="album-card__info">
+        <p class="album-card__count">9 Photographs</p>
+        <h3 class="album-card__name">Australia</h3>
+        <p class="album-card__desc">
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+        </p>
+      </div>
+    </a>
+
+    <a href="album.html" class="album-card" data-region="Europe">
+      <img class="album-card__image" src="https://drive.google.com/thumbnail?id=1AubVdt_Subg3tedYYmZAhiK25Uc6ixHg&sz=w1000" alt="Europe" />
+      <div class="album-card__info">
+        <p class="album-card__count">18 Photographs</p>
+        <h3 class="album-card__name">Europe</h3>
+        <p class="album-card__desc">
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+        </p>
+      </div>
+    </a>
+
+  </div>
+</main>
+
+<script src="js/script.js"></script>
+</body>
+</html>
