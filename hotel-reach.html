@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <title>Hotel Reach — The Modern Gallery</title>
+  <style>
+    body { overflow: hidden; }
+
+    .analytics-layout {
+      display: flex;
+      height: calc(100vh - 56px);
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 300px;
+      min-width: 300px;
+      border-right: 1px solid var(--color-border);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      background: var(--color-bg);
+    }
+
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--color-border); }
+
+    .sidebar-header {
+      padding: 28px 22px 20px;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .sidebar-label {
+      font-size: 0.55rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      margin-bottom: 8px;
+    }
+
+    .sidebar-title {
+      font-family: var(--font-serif);
+      font-size: 1.7rem;
+      font-weight: 300;
+      line-height: 1.1;
+      margin-bottom: 6px;
+    }
+
+    .sidebar-desc {
+      font-size: 0.72rem;
+      color: var(--color-text-muted);
+      line-height: 1.6;
+    }
+
+    /* ── City list ── */
+    .city-list {
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .city-list-header {
+      padding: 10px 22px 8px;
+      font-size: 0.5rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+    }
+
+    .city-btn {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      width: 100%;
+      padding: 9px 22px;
+      background: none;
+      border: none;
+      border-top: 1px solid var(--color-border);
+      cursor: pointer;
+      text-align: left;
+      font-family: var(--font-sans);
+      transition: background 0.12s;
+    }
+
+    .city-btn:hover { background: rgba(0,0,0,0.02); }
+
+    .city-btn.active {
+      background: rgba(0,0,0,0.03);
+    }
+
+    .city-btn-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .city-btn-info { flex: 1; }
+
+    .city-btn-name {
+      font-size: 0.73rem;
+      color: var(--color-text);
+      display: block;
+    }
+
+    .city-btn-hotel {
+      font-size: 0.58rem;
+      color: var(--color-text-muted);
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 190px;
+    }
+
+    /* ── Walk legend ── */
+    .walk-legend {
+      padding: 14px 22px;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .legend-label {
+      font-size: 0.5rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      margin-bottom: 10px;
+    }
+
+    .legend-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.68rem;
+      color: var(--color-text-muted);
+    }
+
+    .legend-swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── Stops panel ── */
+    .stops-panel {
+      flex: 1;
+      padding-bottom: 12px;
+    }
+
+    .stops-header {
+      padding: 12px 22px 8px;
+      font-size: 0.5rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .stops-empty {
+      padding: 16px 22px;
+      font-size: 0.72rem;
+      color: var(--color-text-muted);
+      font-style: italic;
+    }
+
+    .stops-loading {
+      padding: 14px 22px;
+      font-size: 0.68rem;
+      color: var(--color-text-muted);
+    }
+
+    .stop-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 8px 22px;
+      border-bottom: 1px solid transparent;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+
+    .stop-row:hover { background: rgba(0,0,0,0.02); }
+
+    .stop-row.active { background: rgba(0,0,0,0.03); }
+
+    .stop-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .stop-info { flex: 1; min-width: 0; }
+
+    .stop-name {
+      font-size: 0.72rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .stop-type {
+      font-size: 0.58rem;
+      color: var(--color-text-muted);
+      text-transform: capitalize;
+    }
+
+    .stop-time-col {
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .stop-time {
+      font-family: var(--font-serif);
+      font-size: 1rem;
+      font-weight: 300;
+      line-height: 1;
+    }
+
+    .stop-bar-track {
+      width: 44px;
+      height: 2px;
+      background: var(--color-border);
+      border-radius: 1px;
+      overflow: hidden;
+      margin-top: 3px;
+      margin-left: auto;
+    }
+
+    .stop-bar-fill {
+      height: 100%;
+      border-radius: 1px;
+    }
+
+    /* ── Map ── */
+    .map-panel {
+      flex: 1;
+      position: relative;
+    }
+
+    #map { width: 100%; height: 100%; }
+
+    /* ── Map icons ── */
+    .hotel-pin {
+      width: 14px;
+      height: 14px;
+      background: #1a1a1a;
+      border: 2.5px solid #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+
+    .reach-dot {
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.85);
+      box-shadow: 0 1px 5px rgba(0,0,0,0.3);
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+
+    .reach-dot:hover { transform: scale(1.3); }
+
+    /* ── Map route path ── */
+    /* handled by Leaflet */
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav__brand">The Modern Gallery</a>
+  <div class="nav__links">
+    <a href="index.html">Home</a>
+    <a href="collections.html">Collections</a>
+    <a href="about.html">About</a>
+    <a href="route-analysis.html">Explore</a>
+    <a href="city-footprint.html">Footprint</a>
+    <a href="temporal-rhythm.html">Rhythm</a>
+    <a href="hotel-reach.html" class="active">Reach</a>
+  </div>
+</nav>
+
+<div class="analytics-layout">
+
+  <aside class="sidebar">
+
+    <div class="sidebar-header">
+      <p class="sidebar-label">Data Analysis — V</p>
+      <h1 class="sidebar-title">From<br>the Base</h1>
+      <p class="sidebar-desc">
+        From each hotel, how far could you walk? Stops are coloured by actual walking time — revealing which landmarks were genuinely on foot.
+      </p>
+    </div>
+
+    <div class="city-list">
+      <div class="city-list-header">Select a city</div>
+      <div id="city-list-items"></div>
+    </div>
+
+    <div class="walk-legend">
+      <div class="legend-label">Walking time</div>
+      <div class="legend-rows">
+        <div class="legend-row">
+          <span class="legend-swatch" style="background:#2d7845"></span>
+          ≤ 10 min
+        </div>
+        <div class="legend-row">
+          <span class="legend-swatch" style="background:#7a8a20"></span>
+          ≤ 20 min
+        </div>
+        <div class="legend-row">
+          <span class="legend-swatch" style="background:#b07020"></span>
+          ≤ 30 min
+        </div>
+        <div class="legend-row">
+          <span class="legend-swatch" style="background:#c05030"></span>
+          ≤ 45 min
+        </div>
+        <div class="legend-row">
+          <span class="legend-swatch" style="background:#999"></span>
+          > 45 min
+        </div>
+      </div>
+    </div>
+
+    <div class="stops-panel">
+      <div class="stops-header">Stops from hotel</div>
+      <div id="stops-list">
+        <p class="stops-empty">Select a city to see walking times.</p>
+      </div>
+    </div>
+
+  </aside>
+
+  <div class="map-panel">
+    <div id="map"></div>
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const COUNTRY_COLORS = {
+  'Australia':      '#3d7a58',
+  'Austria':        '#4f6fa0',
+  'Czech Republic': '#6840a0',
+  'Germany':        '#2e5fa0',
+  'Hungary':        '#a83535',
+  'Switzerland':    '#6a7a6a',
+  'Thailand':       '#c07830',
+};
+
+const TYPE_COLORS = {
+  landmark:   '#1a1a1a',
+  hotel:      '#3d7a65',
+  restaurant: '#b83232',
+  market:     '#6d28d9',
+  museum:     '#b5185c',
+  sanctuary:  '#a07020',
+  recreation: '#1558b0',
+};
+
+// Cities that have an explicit hotel stop
+const HOTEL_CITIES = [
+  {
+    city: 'Budapest', country: 'Hungary',
+    hotel: { name: 'Diana Club Hotel', lat: 47.489103246035150, lng: 19.093810908024494 },
+    stops: [
+      { name: "Fashion Street",     type: "market",   lat: 47.496826127596900, lng: 19.052723272120310, date: "2024-12-28" },
+      { name: "Heroes' Square",     type: "landmark", lat: 47.515021425886520, lng: 19.077703064338040, date: "2024-12-28" },
+      { name: "Margit Island",      type: "landmark", lat: 47.527584658417150, lng: 19.046917029102640, date: "2024-12-28" },
+      { name: "House of Parliament",type: "landmark", lat: 47.507222462287800, lng: 19.046167890837200, date: "2024-12-28" },
+      { name: "Fisherman's Bastion",type: "landmark", lat: 47.502342155649950, lng: 19.035215717825945, date: "2024-12-27" },
+    ]
+  },
+  {
+    city: 'Frankfurt', country: 'Germany',
+    hotel: { name: 'Holiday Inn Gutleutviertel', lat: 50.097925742470260, lng: 8.647344974305636 },
+    stops: [
+      { name: "MyZeil",              type: "landmark", lat: 50.114840238192930, lng: 8.682127023375905, date: "2025-01-05" },
+      { name: "Historical Museum",   type: "museum",   lat: 50.109542888679100, lng: 8.683247054056338, date: "2025-01-05" },
+      { name: "Städel Museum",       type: "museum",   lat: 50.103521603155750, lng: 8.674221925739140, date: "2025-01-04" },
+    ]
+  },
+  {
+    city: 'Hua Hin', country: 'Thailand',
+    hotel: { name: 'Muban Ban Suk Samran', lat: 12.563044900537514, lng: 99.96151961111585 },
+    stops: [
+      { name: "Shiva Indian Restaurant", type: "restaurant", lat: 12.559764921033220, lng: 99.94124943999445, date: "2024-04-02" },
+      { name: "Cicada Market",           type: "market",     lat: 12.534701292448490, lng: 99.96640404666117, date: "2024-04-01" },
+      { name: "ร้านอาหารโกหมาก",         type: "restaurant", lat: 12.598753212621173, lng: 99.94939937160305, date: "2024-03-31" },
+      { name: "For Art's Sake",          type: "museum",     lat: 12.607076773020262, lng: 99.94898851988168, date: "2024-03-31" },
+    ]
+  },
+  {
+    city: 'Gold Coast', country: 'Australia',
+    hotel: { name: 'InterContinental Sanctuary Cove', lat: -27.851978368290478, lng: 153.36045235035405 },
+    stops: [
+      { name: "KPOP Karaoke Southport",       type: "recreation", lat: -27.968619509285812, lng: 153.41379433685972, date: "2024-10-13" },
+      { name: "George's Cocktail Bar Cafe",   type: "restaurant", lat: -27.852870043736110, lng: 153.36321041463975, date: "2024-10-12" },
+      { name: "Currumbin Wildlife Sanctuary", type: "sanctuary",  lat: -28.135319285427016, lng: 153.48914047172740, date: "2024-07-20" },
+      { name: "Surfers Paradise",             type: "landmark",   lat: -27.998198755481490, lng: 153.42449330569810, date: "2024-07-11" },
+    ]
+  },
+  {
+    city: 'Chiang Rai', country: 'Thailand',
+    hotel: { name: 'Baan Hom Muen Li', lat: 20.165229818658016, lng: 99.63222251784686 },
+    stops: [
+      { name: "Garden of Reeds",           type: "market",   lat: 19.92541562226577,  lng: 99.86444608130503, date: "2025-12-31" },
+      { name: "Choui Fong Tea",            type: "landmark", lat: 20.199746682660773, lng: 99.81709024298240, date: "2025-12-31" },
+      { name: "Mae Fah Luang Garden",      type: "landmark", lat: 20.29991986696831,  lng: 99.85705810628276, date: "2025-12-31" },
+      { name: "Wang Put Tan Tea Plantation",type:"landmark", lat: 20.174982081978882, lng: 99.64098036387551, date: "2025-12-30" },
+    ]
+  },
+  {
+    city: 'Chon Buri', country: 'Thailand',
+    hotel: { name: 'KyuuScape Pool Villa', lat: 13.299074519603161, lng: 100.92104060751180 },
+    stops: [
+      { name: "Bangsaen Aquarium", type: "landmark", lat: 13.285362004793065, lng: 100.92534742339701, date: "2026-01-03" },
+      { name: "Bangsaen Beach",    type: "landmark", lat: 13.289705508623022, lng: 100.91387518629492, date: "2026-01-03" },
+    ]
+  },
+  {
+    city: 'Fang', country: 'Thailand',
+    hotel: { name: 'Ton Fang Hotel', lat: 19.874672192136924, lng: 99.18911502524708 },
+    stops: [
+      { name: "Ang Khang Royal Agricultural Station", type: "landmark", lat: 19.90203425319804, lng: 99.04054973688986, date: "2025-12-29" },
+      { name: "Fang Kalaya Market",                   type: "market",   lat: 19.915511608992706, lng: 99.20986973381906, date: "2025-12-28" },
+    ]
+  },
+];
+
+// ─── Time utilities ───────────────────────────────────
+
+function timeColor(mins) {
+  if (mins === null) return '#bbb';
+  if (mins <= 10) return '#2d7845';
+  if (mins <= 20) return '#7a8a20';
+  if (mins <= 30) return '#b07020';
+  if (mins <= 45) return '#c05030';
+  return '#999';
+}
+
+function fmtMins(secs) {
+  if (secs === null) return '—';
+  const m = Math.round(secs / 60);
+  if (m >= 60) return `${Math.floor(m/60)}h ${m%60}m`;
+  return `${m} min`;
+}
+
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const dLat = (lat2-lat1)*Math.PI/180;
+  const dLng = (lng2-lng1)*Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// ─── OSRM fetches ─────────────────────────────────────
+
+async function fetchWalkingTimes(hotel, stops) {
+  const all = [hotel, ...stops];
+  const coords = all.map(s => `${s.lng},${s.lat}`).join(';');
+  const dests  = stops.map((_, i) => i + 1).join(';');
+  const url = `https://router.project-osrm.org/table/v1/foot/${coords}?sources=0&destinations=${dests}&annotations=duration`;
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.code !== 'Ok') return null;
+    return data.durations[0]; // seconds, index = stop index
+  } catch { return null; }
+}
+
+async function fetchRoute(from, to) {
+  const url = `https://router.project-osrm.org/route/v1/foot/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`;
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    return (data.code === 'Ok' && data.routes.length) ? data.routes[0] : null;
+  } catch { return null; }
+}
+
+// ─── Leaflet map ─────────────────────────────────────
+
+const map = L.map('map', { zoomControl: true }).setView([20, 100], 4);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '© OpenStreetMap contributors © CARTO',
+  subdomains: 'abcd', maxZoom: 19
+}).addTo(map);
+
+let mapLayers   = [];
+let routeLayer  = null;
+let activeStopIdx = null;
+
+function clearMap() {
+  mapLayers.forEach(l => map.removeLayer(l));
+  mapLayers = [];
+  if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
+  activeStopIdx = null;
+}
+
+// Initial hotel pins (all cities on world view)
+function drawInitialPins() {
+  for (const c of HOTEL_CITIES) {
+    const pin = L.marker([c.hotel.lat, c.hotel.lng], {
+      icon: L.divIcon({
+        html: `<div class="hotel-pin" title="${c.hotel.name}"></div>`,
+        className: '', iconSize: [14,14], iconAnchor: [7,7]
+      })
+    }).bindPopup(`<strong>${c.hotel.name}</strong><br>${c.city}, ${c.country}`).addTo(map);
+    mapLayers.push(pin);
+  }
+}
+
+// Walk rings (straight-line approximations)
+const WALK_SPEED = 80; // m/min
+const RINGS = [
+  { mins: 45, fill: 'rgba(190,80,40,0.04)',  stroke: '#c05030', weight: 0.8 },
+  { mins: 30, fill: 'rgba(180,110,30,0.06)', stroke: '#b07020', weight: 0.8 },
+  { mins: 20, fill: 'rgba(120,140,30,0.07)', stroke: '#7a8a20', weight: 0.8 },
+  { mins: 10, fill: 'rgba(45,120,70,0.09)',  stroke: '#2d7845', weight: 0.8 },
+];
+
+function drawRings(hotel) {
+  for (const ring of RINGS) {
+    const c = L.circle([hotel.lat, hotel.lng], {
+      radius: ring.mins * WALK_SPEED,
+      fillColor: ring.fill, fillOpacity: 1,
+      color: ring.stroke, weight: ring.weight, opacity: 0.5,
+      interactive: false
+    }).addTo(map);
+    mapLayers.push(c);
+  }
+}
+
+function drawHotelPin(hotel) {
+  const m = L.marker([hotel.lat, hotel.lng], {
+    icon: L.divIcon({
+      html: `<div class="hotel-pin"></div>`,
+      className: '', iconSize: [14,14], iconAnchor: [7,7]
+    }),
+    zIndexOffset: 1000
+  }).bindPopup(`<strong>${hotel.name}</strong><br>Base hotel`).addTo(map);
+  mapLayers.push(m);
+}
+
+function drawStopMarkers(cityData, times) {
+  cityData.stops.forEach((stop, i) => {
+    const secs  = times ? times[i] : null;
+    const color = timeColor(secs !== null ? Math.round(secs/60) : null);
+    const m = L.marker([stop.lat, stop.lng], {
+      icon: L.divIcon({
+        html: `<div class="reach-dot" style="width:13px;height:13px;background:${color}"></div>`,
+        className: '', iconSize: [13,13], iconAnchor: [6.5,6.5]
+      })
+    })
+    .bindPopup(`<strong>${stop.name}</strong><br>${stop.type}<br>${fmtMins(secs)}`)
+    .on('click', () => selectStop(i, cityData, color))
+    .addTo(map);
+    mapLayers.push(m);
+  });
+}
+
+async function selectStop(idx, cityData, color) {
+  if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
+  if (activeStopIdx === idx) { activeStopIdx = null; return; }
+  activeStopIdx = idx;
+
+  document.querySelectorAll('.stop-row').forEach((el, i) => el.classList.toggle('active', i === idx));
+
+  const route = await fetchRoute(cityData.hotel, cityData.stops[idx]);
+  if (route) {
+    routeLayer = L.geoJSON(route.geometry, {
+      style: { color, weight: 2.2, opacity: 0.8, dashArray: null }
+    }).addTo(map);
+  }
+}
+
+// ─── Sidebar: city list ───────────────────────────────
+
+function buildCityList() {
+  const container = document.getElementById('city-list-items');
+  container.innerHTML = HOTEL_CITIES.map((c, i) => `
+    <button class="city-btn" data-idx="${i}" onclick="selectCity(${i})">
+      <span class="city-btn-dot" style="background:${COUNTRY_COLORS[c.country]}"></span>
+      <span class="city-btn-info">
+        <span class="city-btn-name">${c.city}</span>
+        <span class="city-btn-hotel">${c.hotel.name}</span>
+      </span>
+    </button>
+  `).join('');
+}
+
+// ─── Sidebar: stops list ──────────────────────────────
+
+function renderStopsLoading() {
+  document.getElementById('stops-list').innerHTML =
+    `<p class="stops-loading">Fetching walking times…</p>`;
+}
+
+function renderStopsList(cityData, times) {
+  const stops = cityData.stops.map((s, i) => ({
+    ...s, secs: times ? times[i] : null, idx: i
+  }));
+  stops.sort((a, b) => (a.secs ?? Infinity) - (b.secs ?? Infinity));
+
+  const maxSecs = Math.max(...stops.map(s => s.secs ?? 0), 1);
+
+  document.getElementById('stops-list').innerHTML = stops.map(s => {
+    const mins  = s.secs !== null ? Math.round(s.secs / 60) : null;
+    const color = timeColor(mins);
+    const pct   = s.secs !== null ? Math.min(100, (s.secs / (60*60)) * 100) : 0;
+    return `
+    <div class="stop-row" data-idx="${s.idx}" onclick="selectStopFromList(${s.idx})">
+      <span class="stop-dot" style="background:${color}"></span>
+      <span class="stop-info">
+        <span class="stop-name">${s.name}</span>
+        <span class="stop-type">${s.type}</span>
+      </span>
+      <span class="stop-time-col">
+        <span class="stop-time" style="color:${color}">${fmtMins(s.secs)}</span>
+        <div class="stop-bar-track">
+          <div class="stop-bar-fill" style="width:${pct.toFixed(0)}%;background:${color}"></div>
+        </div>
+      </span>
+    </div>`;
+  }).join('');
+}
+
+// ─── City selection ───────────────────────────────────
+
+let activeCityIdx = null;
+let activeCityData = null;
+let activeTimes = null;
+
+async function selectCity(idx) {
+  if (activeCityIdx === idx) return;
+  activeCityIdx = idx;
+
+  document.querySelectorAll('.city-btn').forEach(el => {
+    el.classList.toggle('active', parseInt(el.dataset.idx) === idx);
+  });
+
+  const cityData = HOTEL_CITIES[idx];
+  activeCityData = cityData;
+  activeTimes = null;
+
+  clearMap();
+  renderStopsLoading();
+
+  // Map: rings + hotel pin + initial stop markers (no times yet)
+  drawRings(cityData.hotel);
+  drawHotelPin(cityData.hotel);
+  drawStopMarkers(cityData, null);
+
+  // Fly to city
+  const allPts = [cityData.hotel, ...cityData.stops].map(s => [s.lat, s.lng]);
+  const bounds = L.latLngBounds(allPts);
+  map.flyToBounds(bounds.pad(0.3), { duration: 0.9 });
+
+  // Fetch times
+  const times = await fetchWalkingTimes(cityData.hotel, cityData.stops);
+  activeTimes = times;
+
+  // Fallback: estimate from straight-line if OSRM null
+  const resolved = cityData.stops.map((s, i) => {
+    if (times && times[i] !== null) return times[i];
+    const distM = haversine(cityData.hotel.lat, cityData.hotel.lng, s.lat, s.lng);
+    return (distM / WALK_SPEED) * 60; // convert m to seconds at walk speed
+  });
+
+  // Redraw markers with times
+  // Remove old stop markers (all but rings + hotel, which are first 5 and 1 layers)
+  const ringCount = RINGS.length;
+  const toRemove = mapLayers.slice(ringCount + 1);
+  toRemove.forEach(l => map.removeLayer(l));
+  mapLayers = mapLayers.slice(0, ringCount + 1);
+
+  drawStopMarkers(cityData, resolved);
+  renderStopsList(cityData, resolved);
+}
+
+function selectStopFromList(idx) {
+  if (!activeCityData) return;
+  const secs = activeTimes && activeTimes[idx] !== null ? activeTimes[idx] : null;
+  const mins = secs !== null ? Math.round(secs/60) : 60;
+  selectStop(idx, activeCityData, timeColor(mins));
+}
+
+// ─── Init ─────────────────────────────────────────────
+drawInitialPins();
+buildCityList();
+</script>
+
+</body>
+</html>
