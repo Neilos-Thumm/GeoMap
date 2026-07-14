@@ -127,7 +127,7 @@ nav {
   font-size: 0.58rem;
   letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: var(--color-text-muted);
+  color: var(--color-text);
   margin-bottom: 20px;
 }
 
@@ -142,7 +142,7 @@ nav {
 .home-tagline {
   font-size: 0.8rem;
   font-style: italic;
-  color: var(--color-text-muted);
+  color: var(--color-text);
   margin-bottom: 40px;
 }
 
