@@ -32,15 +32,19 @@ Four dedicated analytical pages were built on top of the core location dataset, 
 
 **Explore (route-analysis.html)**  
 Chronological daily routes traced on real street networks. Uses the OSRM public routing API (`/route/v1/foot/`) to fetch actual walking paths between stops, rendered as Leaflet polylines. Falls back to straight-line connections when OSRM cannot route (e.g. remote terrain). Stops are colour-coded by type (landmark, restaurant, hotel, etc.) and the sidebar shows a timeline with per-stop timestamps.
+<img src="images/explore.png">
 
 **Footprint (city-footprint.html)**  
 A geographic spread analysis across all visited cities. Computes a convex hull per city from stop coordinates to visualise the spatial footprint of each visit as a filled polygon on the map. Cities are grouped by country with dot-density markers; sidebar shows stop counts, type breakdowns, and country tallies.
+<img src="images/footprint.png">
 
 **Rhythm (temporal-rhythm.html)**  
 A 24-hour polar clock chart built entirely in SVG (no chart library). Each of the 76 travel stops is plotted as a dot at its time-of-day angle on a 24-hour clock face, with radial position encoding minutes-within-the-hour. Day/night zones are shaded using annular arc paths. Clicking a type in the legend spotlights those stops and dims all others. A country rhythm panel shows the average hour of first activity per country.
+<img src="images/rythm.png">
 
 **Reach (hotel-reach.html)**  
 Isochrone-style walking reach from each city's hotel. Draws four concentric walking-time rings (10 / 20 / 30 / 45 min) on the map using a walking speed constant of 80 m/min. A single OSRM table request (`/table/v1/foot/`) fetches walking times from the hotel to all stops in one call; null values (unroutable terrain) fall back to haversine straight-line estimation. Clicking a stop marker or sidebar row fires a second OSRM route request to draw the actual walking path for that pair. Stops are colour-coded by which time ring they fall within.
+<img src="images/reach.png">
 
 **Key tools and APIs used across all four pages:**
 - [Leaflet.js](https://leafletjs.com/) — interactive map rendering (CartoDB Positron tiles)
