@@ -246,7 +246,7 @@
       position: relative;
     }
 
-    #map { width: 100%; height: 100%; }
+    #reach-map { width: 100%; height: 100%; }
 
     /* ── Map icons ── */
     .hotel-pin {
@@ -278,11 +278,11 @@
   <div class="nav__links">
     <a href="index.html">Home</a>
     <a href="collections.html">Collections</a>
-    <a href="about.html">About</a>
     <a href="route-analysis.html">Explore</a>
     <a href="city-footprint.html">Footprint</a>
     <a href="temporal-rhythm.html">Rhythm</a>
     <a href="hotel-reach.html" class="active">Reach</a>
+    <a href="about.html">About</a>
   </div>
 </nav>
 
@@ -339,7 +339,7 @@
   </aside>
 
   <div class="map-panel">
-    <div id="map"></div>
+    <div id="reach-map"></div>
   </div>
 
 </div>
@@ -488,7 +488,7 @@ async function fetchRoute(from, to) {
 
 // ─── Leaflet map ─────────────────────────────────────
 
-const map = L.map('map', { zoomControl: true }).setView([20, 100], 4);
+const map = L.map('reach-map', { zoomControl: true }).setView([20, 100], 4);
 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
   attribution: '© OpenStreetMap contributors © CARTO',
   subdomains: 'abcd', maxZoom: 19
